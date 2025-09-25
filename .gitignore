@@ -1,0 +1,6 @@
+/bin
+/.vscode
+/config/*
+!/config/example.yml
+.env
+*.log

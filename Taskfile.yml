@@ -1,0 +1,48 @@
+version: "3"
+
+dotenv:
+  - .env
+
+tasks:
+  swag:
+      cmds:
+        - swag fmt
+        - swag init -d ./internal/server -g server.go --pdl 3
+  build:
+    cmds:
+      - go build -o ./bin/app ./cmd/app/main.go
+  run:
+    deps: [compose, swag, build]
+    env:
+      CONFIG_PATH: ./config/local.yml
+    cmds:
+      - ./bin/app
+  test:
+    deps: [set-env]
+    env:
+      DB_HOST: "{{.DB_HOST}}"
+      DB_PORT: "{{.DB_PORT}}"
+      DB_USER: "{{.DB_USER}}"
+      DB_PASSWORD: "{{.DB_PASSWORD}}"
+      DB_NAME: "{{.DB_NAME}}"
+    cmds:
+      - go test -v -race ./...
+  lint:
+    cmds:
+      - golangci-lint run ./...
+  set-env:
+    cmds:
+      - rm -rf .env
+      - go run ./cmd/env-setter/main.go --config=./config/local.yml
+  compose:
+    deps: [set-env]
+    cmds:
+      - docker compose up -d
+      - sleep 3
+  cov:
+    deps: [set-env]
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+      - go tool cover -html=coverage.out -o coverage.html
+      - rm coverage.out

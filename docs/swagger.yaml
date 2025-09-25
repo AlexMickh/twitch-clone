@@ -1,0 +1,146 @@
+definitions:
+  api.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dtos.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dtos.RegisterRequest:
+    properties:
+      email:
+        type: string
+      login:
+        minLength: 3
+        type: string
+      password:
+        minLength: 3
+        type: string
+    required:
+    - email
+    - login
+    - password
+    type: object
+  dtos.RegisterResponse:
+    properties:
+      id:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Your API description
+  title: Your API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: login user
+      parameters:
+      - description: request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: login user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: register user
+      parameters:
+      - description: request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: register user
+      tags:
+      - auth
+  /user/verify-email/{token}:
+    get:
+      consumes:
+      - application/json
+      description: verify user email
+      parameters:
+      - description: token for email verification
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      summary: verify user email
+      tags:
+      - user
+securityDefinitions:
+  SessionAuth:
+    in: cookie
+    name: session_id
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,32 @@
+env: local
+
+server:
+  addr: localhost:8000
+  timeout: 4s
+  idle_timeout: 60s
+
+db:
+  host: localhost
+  port: 27017
+  user: admin123
+  password: admin123
+  database: twitch-clone
+  collections:
+    users: users
+    tokens: tokens
+
+redis:
+  host: localhost
+  port: 6382
+  user: root
+  password: root
+  user_password: root
+  db: 0
+  expire_time: 120h
+
+
+mail:
+  host: youre.smtp.server
+  port: 123
+  from_addr: user@example.com
+  password: your_password
