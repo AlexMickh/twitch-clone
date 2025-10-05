@@ -16,9 +16,9 @@ WORKDIR /app
 
 COPY --from=builder /twitch-clone .
 COPY --from=builder /env-setter .
-COPY ./config/prod.yml .
+COPY ./config/example.yml .
 
-RUN ./env-setter --config=./prod.yml
+RUN ./env-setter --config=./example.yml
 
 EXPOSE 8080
 
