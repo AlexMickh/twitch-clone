@@ -20,7 +20,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	log := logger.New(cfg.Env, io.MultiWriter(os.Stdout, file))
 

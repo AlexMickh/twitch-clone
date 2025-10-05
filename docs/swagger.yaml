@@ -4,6 +4,15 @@ definitions:
       error:
         type: string
     type: object
+  dtos.CurrentSessionResponse:
+    properties:
+      id:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: string
+    type: object
   dtos.LoginRequest:
     properties:
       email:
@@ -107,6 +116,35 @@ paths:
       summary: register user
       tags:
       - auth
+  /session/current:
+    get:
+      consumes:
+      - application/json
+      description: login user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.CurrentSessionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrorResponse'
+      security:
+      - SessionAuth: []
+      summary: login user
+      tags:
+      - session
   /user/verify-email/{token}:
     get:
       consumes:

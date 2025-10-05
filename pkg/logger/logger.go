@@ -68,6 +68,7 @@ func ChiMiddleware(ctx context.Context) func(next http.Handler) http.Handler {
 
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			guid := middleware.GetReqID(r.Context())
+			//nolint:staticcheck
 			ctx = context.WithValue(r.Context(), RequestID, guid)
 			log = log.With(slog.String("request_id", guid))
 			log.Info(

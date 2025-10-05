@@ -12,7 +12,7 @@ tasks:
     cmds:
       - go build -o ./bin/app ./cmd/app/main.go
   run:
-    deps: [compose, swag, build]
+    deps: [swag, compose, build]
     env:
       CONFIG_PATH: ./config/local.yml
     cmds:
@@ -25,6 +25,11 @@ tasks:
       DB_USER: "{{.DB_USER}}"
       DB_PASSWORD: "{{.DB_PASSWORD}}"
       DB_NAME: "{{.DB_NAME}}"
+
+      REDIS_HOST: "{{.REDIS_HOST}}"
+      REDIS_PORT: "{{.REDIS_PORT}}"
+      REDIS_PASSWORD: "{{.REDIS_PASSWORD}}"
+      REDIS_DB: "{{.REDIS_DB}}"
     cmds:
       - go test -v -race ./...
   lint:

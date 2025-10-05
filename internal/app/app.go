@@ -82,7 +82,7 @@ func New(ctx context.Context, cfg *config.Config) *App {
 	authService := auth_service.New(userService, mailService, tokenService, sessionService)
 
 	log.Info("initing server")
-	srv := server.New(ctx, cfg.Server, authService, userService)
+	srv := server.New(ctx, cfg.Server, authService, userService, sessionService)
 
 	return &App{
 		cfg:  cfg,
@@ -107,7 +107,7 @@ func (a *App) Run(ctx context.Context) {
 }
 
 func (a *App) Close(ctx context.Context) {
-	a.srv.GracefulStop(ctx)
-	a.db.Disconnect(ctx)
-	a.cash.Close()
+	_ = a.srv.GracefulStop(ctx)
+	_ = a.db.Disconnect(ctx)
+	_ = a.cash.Close()
 }

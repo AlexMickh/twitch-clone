@@ -8,13 +8,17 @@ import (
 	_ "github.com/AlexMickh/twitch-clone/docs"
 	"github.com/AlexMickh/twitch-clone/internal/config"
 	"github.com/AlexMickh/twitch-clone/internal/dtos"
+	"github.com/AlexMickh/twitch-clone/internal/entities"
 	"github.com/AlexMickh/twitch-clone/internal/server/handlers/auth/login"
 	"github.com/AlexMickh/twitch-clone/internal/server/handlers/auth/register"
+	"github.com/AlexMickh/twitch-clone/internal/server/handlers/session/current_session"
 	"github.com/AlexMickh/twitch-clone/internal/server/handlers/user/verify_email"
+	"github.com/AlexMickh/twitch-clone/internal/server/middlewares"
 	"github.com/AlexMickh/twitch-clone/pkg/api"
 	"github.com/AlexMickh/twitch-clone/pkg/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 	"github.com/rs/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
@@ -32,6 +36,11 @@ type UserService interface {
 	VerifyEmail(ctx context.Context, req dtos.ValidateEmailRequest) error
 }
 
+type SessionService interface {
+	SessionById(ctx context.Context, sessionId string) (entities.Session, error)
+	ValidateSession(ctx context.Context, sessionId string) (uuid.UUID, error)
+}
+
 // @title						Your API
 // @version					1.0
 // @description				Your API description
@@ -43,9 +52,8 @@ func New(
 	cfg config.ServerConfig,
 	authService AuthService,
 	userService UserService,
+	sessionService SessionService,
 ) *Server {
-	const op = "server.New"
-
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -70,11 +78,16 @@ func New(
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", api.ErrorWrapper(register.New(authService)))
-		r.Post("/login", api.ErrorWrapper(login.New(authService)))
+		r.Post("/login", api.ErrorWrapper(login.New(authService, cfg.Session)))
 	})
 
 	r.Route("/user", func(r chi.Router) {
 		r.Get("/verify-email/{token}", api.ErrorWrapper(verify_email.New(userService)))
+	})
+
+	r.Route("/session", func(r chi.Router) {
+		r.Use(middlewares.Auth(cfg.Session, sessionService))
+		r.Get("/current", api.ErrorWrapper(current_session.New(sessionService, cfg.Session)))
 	})
 
 	return &Server{

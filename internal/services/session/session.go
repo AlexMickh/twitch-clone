@@ -11,6 +11,7 @@ import (
 
 type Repository interface {
 	SaveSession(ctx context.Context, session entities.Session) error
+	SessionById(ctx context.Context, sessionId string) (entities.Session, error)
 }
 
 type Service struct {
@@ -24,7 +25,7 @@ func New(repository Repository) *Service {
 }
 
 func (s *Service) CreateSession(ctx context.Context, userId uuid.UUID, userAgent string) (uuid.UUID, error) {
-	const op = "services.user.CreateSession"
+	const op = "services.session.CreateSession"
 
 	session := entities.Session{
 		ID:        uuid.New(),
@@ -39,4 +40,26 @@ func (s *Service) CreateSession(ctx context.Context, userId uuid.UUID, userAgent
 	}
 
 	return session.ID, nil
+}
+
+func (s *Service) SessionById(ctx context.Context, sessionId string) (entities.Session, error) {
+	const op = "services.session.SessionById"
+
+	session, err := s.repository.SessionById(ctx, sessionId)
+	if err != nil {
+		return entities.Session{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return session, nil
+}
+
+func (s *Service) ValidateSession(ctx context.Context, sessionId string) (uuid.UUID, error) {
+	const op = "services.session.ValidateSession"
+
+	session, err := s.SessionById(ctx, sessionId)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return session.UserId, nil
 }

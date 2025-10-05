@@ -1,4 +1,4 @@
-package user_repository
+package token_repository
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/AlexMickh/twitch-clone/internal/consts"
 	"github.com/AlexMickh/twitch-clone/internal/entities"
 	"github.com/AlexMickh/twitch-clone/internal/errs"
 	"github.com/AlexMickh/twitch-clone/pkg/clients/mongodb"
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -18,85 +18,14 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func TestRepository_SaveUser(t *testing.T) {
-	isSkip(t)
-	type fields struct {
-		coll *mongo.Collection
-	}
-	type args struct {
-		ctx  context.Context
-		user entities.User
-	}
-
-	client, coll := initRepository(t)
-	defer func() {
-		_ = client.Disconnect(t.Context())
-	}()
-
-	existingUser := entities.User{
-		ID:       uuid.New(),
-		Login:    gofakeit.FirstName(),
-		Email:    gofakeit.Email(),
-		Password: "some password",
-	}
-
-	_, err := coll.InsertOne(t.Context(), existingUser)
-	require.NoError(t, err, fmt.Sprintf("failed to save user: %v", err))
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr error
-	}{
-		{
-			name: "good case",
-			fields: fields{
-				coll: coll,
-			},
-			args: args{
-				ctx: context.TODO(),
-				user: entities.User{
-					ID:       uuid.New(),
-					Login:    gofakeit.FirstName(),
-					Email:    gofakeit.Email(),
-					Password: "some password",
-				},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "user already exists case",
-			fields: fields{
-				coll: coll,
-			},
-			args: args{
-				ctx:  context.TODO(),
-				user: existingUser,
-			},
-			wantErr: errs.ErrUserAlreadyExists,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Repository{
-				coll: tt.fields.coll,
-			}
-			err := r.SaveUser(tt.args.ctx, tt.args.user)
-			require.ErrorIs(t, err, tt.wantErr, fmt.Sprintf("Repository.SaveUser() error = %v, wantErr %v", err, tt.wantErr))
-		})
-	}
-}
-
-func TestRepository_UserByEmail(t *testing.T) {
+func TestRepository_SaveToken(t *testing.T) {
 	isSkip(t)
 	type fields struct {
 		coll *mongo.Collection
 	}
 	type args struct {
 		ctx   context.Context
-		email string
+		token entities.Token
 	}
 
 	client, coll := initRepository(t)
@@ -104,21 +33,10 @@ func TestRepository_UserByEmail(t *testing.T) {
 		_ = client.Disconnect(t.Context())
 	}()
 
-	user := entities.User{
-		ID:       uuid.New(),
-		Login:    gofakeit.FirstName(),
-		Email:    gofakeit.Email(),
-		Password: "some password",
-	}
-
-	_, err := coll.InsertOne(t.Context(), user)
-	require.NoError(t, err)
-
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    entities.User
 		wantErr error
 	}{
 		{
@@ -127,23 +45,14 @@ func TestRepository_UserByEmail(t *testing.T) {
 				coll: coll,
 			},
 			args: args{
-				ctx:   t.Context(),
-				email: user.Email,
+				ctx: nil,
+				token: entities.Token{
+					Token:  uuid.NewString(),
+					UserId: uuid.New(),
+					Type:   consts.TokenTypeVerifyEmail,
+				},
 			},
-			want:    user,
 			wantErr: nil,
-		},
-		{
-			name: "not found case",
-			fields: fields{
-				coll: coll,
-			},
-			args: args{
-				ctx:   t.Context(),
-				email: "not existing email",
-			},
-			want:    entities.User{},
-			wantErr: errs.ErrUserNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -151,23 +60,20 @@ func TestRepository_UserByEmail(t *testing.T) {
 			r := &Repository{
 				coll: tt.fields.coll,
 			}
-			got, err := r.UserByEmail(tt.args.ctx, tt.args.email)
+			err := r.SaveToken(tt.args.ctx, tt.args.token)
 			require.ErrorIs(t, err, tt.wantErr)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Repository.UserByEmail() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
 
-func TestRepository_ValidateEmail(t *testing.T) {
+func TestRepository_Token(t *testing.T) {
 	isSkip(t)
 	type fields struct {
 		coll *mongo.Collection
 	}
 	type args struct {
-		ctx context.Context
-		id  uuid.UUID
+		ctx   context.Context
+		token string
 	}
 
 	client, coll := initRepository(t)
@@ -175,14 +81,83 @@ func TestRepository_ValidateEmail(t *testing.T) {
 		_ = client.Disconnect(t.Context())
 	}()
 
-	user := entities.User{
-		ID:       uuid.New(),
-		Login:    gofakeit.FirstName(),
-		Email:    gofakeit.Email(),
-		Password: "some password",
+	token := entities.Token{
+		Token:  uuid.NewString(),
+		UserId: uuid.New(),
+		Type:   consts.TokenTypeVerifyEmail,
 	}
 
-	_, err := coll.InsertOne(t.Context(), user)
+	_, err := coll.InsertOne(t.Context(), token)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    entities.Token
+		wantErr error
+	}{
+		{
+			name: "good case",
+			fields: fields{
+				coll: coll,
+			},
+			args: args{
+				ctx:   t.Context(),
+				token: token.Token,
+			},
+			want:    token,
+			wantErr: nil,
+		},
+		{
+			name: "not found case",
+			fields: fields{
+				coll: coll,
+			},
+			args: args{
+				ctx:   t.Context(),
+				token: "not existing token",
+			},
+			want:    entities.Token{},
+			wantErr: errs.ErrTokenNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Repository{
+				coll: tt.fields.coll,
+			}
+			got, err := r.Token(tt.args.ctx, tt.args.token)
+			require.ErrorIs(t, err, tt.wantErr)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Repository.Token() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRepository_DeleteToken(t *testing.T) {
+	isSkip(t)
+	type fields struct {
+		coll *mongo.Collection
+	}
+	type args struct {
+		ctx   context.Context
+		token string
+	}
+
+	client, coll := initRepository(t)
+	defer func() {
+		_ = client.Disconnect(t.Context())
+	}()
+
+	token := entities.Token{
+		Token:  uuid.NewString(),
+		UserId: uuid.New(),
+		Type:   consts.TokenTypeVerifyEmail,
+	}
+
+	_, err := coll.InsertOne(t.Context(), token)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -197,8 +172,8 @@ func TestRepository_ValidateEmail(t *testing.T) {
 				coll: coll,
 			},
 			args: args{
-				ctx: t.Context(),
-				id:  user.ID,
+				ctx:   t.Context(),
+				token: token.Token,
 			},
 			wantErr: nil,
 		},
@@ -208,10 +183,10 @@ func TestRepository_ValidateEmail(t *testing.T) {
 				coll: coll,
 			},
 			args: args{
-				ctx: t.Context(),
-				id:  uuid.New(),
+				ctx:   t.Context(),
+				token: "not existing token",
 			},
-			wantErr: errs.ErrUserNotFound,
+			wantErr: errs.ErrTokenNotFound,
 		},
 	}
 	for _, tt := range tests {
@@ -219,7 +194,7 @@ func TestRepository_ValidateEmail(t *testing.T) {
 			r := &Repository{
 				coll: tt.fields.coll,
 			}
-			err := r.ValidateEmail(tt.args.ctx, tt.args.id)
+			err := r.DeleteToken(tt.args.ctx, tt.args.token)
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -246,12 +221,12 @@ func initRepository(t *testing.T) (*mongo.Client, *mongo.Collection) {
 	client, err := mongo.Connect(options.Client().ApplyURI(connString).SetRegistry(mongodb.UUIDRegistry))
 	require.NoError(t, err, fmt.Sprintf("failed to connect to db: %v", err))
 
-	coll := client.Database("tests").Collection("users")
+	coll := client.Database("tests").Collection("tokens")
 
 	_, err = coll.Indexes().CreateOne(
 		t.Context(),
 		mongo.IndexModel{
-			Keys:    bson.D{{Key: "email", Value: 1}},
+			Keys:    bson.D{{Key: "token", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		},
 	)

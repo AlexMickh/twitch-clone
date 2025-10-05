@@ -30,7 +30,7 @@ func New(emailVerifier EmailVerifier) api.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		const op = "handlers.user.verify_email.New"
 		ctx := r.Context()
-		log := logger.FromCtx(ctx)
+		log := logger.FromCtx(ctx).With("op", op)
 
 		req := dtos.ValidateEmailRequest{
 			Token: r.PathValue("token"),

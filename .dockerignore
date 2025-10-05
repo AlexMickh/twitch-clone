@@ -1,0 +1,6 @@
+/bin
+/.github
+.gitignore
+coverage.html
+*.log
+Taskfile.yml

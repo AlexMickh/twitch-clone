@@ -3,8 +3,10 @@ package login
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
+	"github.com/AlexMickh/twitch-clone/internal/config"
 	"github.com/AlexMickh/twitch-clone/internal/dtos"
 	"github.com/AlexMickh/twitch-clone/internal/errs"
 	"github.com/AlexMickh/twitch-clone/pkg/api"
@@ -28,11 +30,11 @@ type Loginer interface {
 // @Failure		404	{object}	api.ErrorResponse
 // @Failure		500	{object}	api.ErrorResponse
 // @Router			/auth/login [post]
-func New(loginer Loginer) api.HandlerFunc {
+func New(loginer Loginer, sessionCfg config.SessionConfig) api.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		const op = "handlers.auth.register.New"
+		const op = "handlers.auth.login.New"
 		ctx := r.Context()
-		log := logger.FromCtx(ctx)
+		log := logger.FromCtx(ctx).With(slog.String("op", op))
 
 		var req dtos.LoginRequest
 		err := render.DecodeJSON(r.Body, &req)
@@ -62,13 +64,13 @@ func New(loginer Loginer) api.HandlerFunc {
 		}
 
 		cookie := &http.Cookie{
-			Name:     "session_id",
+			Name:     sessionCfg.Name,
 			Value:    sessionId,
 			Path:     "/",
-			HttpOnly: true,
-			Secure:   false,
+			HttpOnly: sessionCfg.HttpOnly,
+			Secure:   sessionCfg.Secure,
 			SameSite: http.SameSiteStrictMode,
-			MaxAge:   432000, // 5 days
+			MaxAge:   sessionCfg.MaxAge,
 		}
 		http.SetCookie(w, cookie)
 		w.WriteHeader(http.StatusCreated)

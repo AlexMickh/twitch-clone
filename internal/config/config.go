@@ -21,6 +21,7 @@ type ServerConfig struct {
 	Addr        string        `yaml:"addr" env-default:"0.0.0.0:50070"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	Session     SessionConfig `yaml:"session"`
 }
 
 type DBConfig struct {
@@ -46,6 +47,13 @@ type MailConfig struct {
 	Port     int    `env:"MAIL_PORT" yaml:"port" env-required:"true"`
 	FromAddr string `env:"MAIL_FROM_ADDR" yaml:"from_addr" env-required:"true"`
 	Password string `env:"MAIL_PASSWORD" yaml:"password" env-required:"true"`
+}
+
+type SessionConfig struct {
+	Name     string `yaml:"name" env-default:"session_id"`
+	HttpOnly bool   `yaml:"http_only" env-default:"true"`
+	Secure   bool   `yaml:"secure" env-default:"true"`
+	MaxAge   int    `yaml:"max_age" env-default:"432000"`
 }
 
 func MustLoad() *Config {

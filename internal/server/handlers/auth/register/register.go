@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/AlexMickh/twitch-clone/internal/dtos"
@@ -30,7 +31,7 @@ func New(registerer Registerer) api.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		const op = "handlers.auth.register.New"
 		ctx := r.Context()
-		log := logger.FromCtx(ctx)
+		log := logger.FromCtx(ctx).With(slog.String("op", op))
 
 		var req dtos.RegisterRequest
 		err := render.DecodeJSON(r.Body, &req)
@@ -52,7 +53,7 @@ func New(registerer Registerer) api.HandlerFunc {
 			}
 
 			log.Error("failed to register user", logger.Err(err))
-			return api.Error("failed to register user", http.StatusBadRequest)
+			return api.Error("failed to register user", http.StatusInternalServerError)
 		}
 
 		render.Status(r, http.StatusCreated)
